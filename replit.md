@@ -11,9 +11,11 @@ A Python tool that analyzes spiritual communities on Reddit to identify emotiona
 
 ## Features
 - **Customizable Communities**: Edit the `COMMUNITIES` list at the top of the script to choose which subreddits to analyze
-- **Post Details**: View full post titles, content (400 character preview), and direct URLs
-- **Comment Analysis**: See top comments from each post (configurable)
-- **Emotional Patterns**: Automatically detect 6 emotional patterns in posts and comments
+- **Comprehensive Data Extraction**: Captures full post content, metadata, and comments
+- **Multiple Export Formats**: Saves data in CSV, JSON, and text formats
+- **Post Details**: Extracts title, content, URL, flair, creation date, upvotes, author, and more
+- **Comment Analysis**: Collects top comments with text, upvotes, dates, and authors
+- **Emotional Patterns**: Automatically detects 6 emotional patterns in posts and comments
 
 ## Project Structure
 - `spiritual_trigger_finder.py` - Main analysis script
@@ -36,6 +38,24 @@ At the top of `spiritual_trigger_finder.py`, you can customize:
 
 ## How to Run
 The workflow is already configured. Click "Run" to analyze spiritual communities and see detailed post content with comments.
+
+## Exported Files
+After each run, the script automatically creates three files:
+
+### 1. spiritual_posts.csv
+- **Purpose**: Spreadsheet analysis (Excel, Google Sheets)
+- **Contains**: Post ID, community, title, content, URL, flair, created date, upvotes, comments count, author, emotions, and top 3 comments
+- **Use for**: Filtering, sorting, pivot tables, and quantitative analysis
+
+### 2. spiritual_posts.json
+- **Purpose**: LLM/AI processing and programmatic access
+- **Contains**: Complete structured data with all post and comment metadata including timestamps
+- **Use for**: Training AI models, custom analysis scripts, or feeding to ChatGPT/Claude via API
+
+### 3. spiritual_posts_for_chatgpt.txt
+- **Purpose**: Easy copying to ChatGPT or other AI chat interfaces
+- **Contains**: Human-readable formatted text with all post content and comments
+- **Use for**: Copy entire file or specific posts to ChatGPT for deeper analysis, content generation, or insights
 
 ## Recent Analysis Results (Oct 30, 2025)
 - **Posts Analyzed**: 45 emotionally charged posts
