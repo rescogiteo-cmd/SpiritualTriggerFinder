@@ -3,8 +3,17 @@ import time
 import os
 from collections import Counter
 
+COMMUNITIES = ['spirituality', 'meditation', 'Mindfulness', 'awakened']
+POSTS_PER_COMMUNITY = 25
+SHOW_COMMENTS = True
+MAX_COMMENTS_PER_POST = 3
+
 print("🌈 Spiritual Trigger Finder - Starting...")
 print("This will analyze spiritual communities for emotional patterns...")
+print("=" * 50)
+print(f"\n🎯 Communities to analyze: {', '.join(['r/' + c for c in COMMUNITIES])}")
+print(f"📊 Posts per community: {POSTS_PER_COMMUNITY}")
+print(f"💬 Show comments: {'Yes' if SHOW_COMMENTS else 'No'}")
 print("=" * 50)
 
 REDDIT_CLIENT_ID = os.environ.get('REDDIT_CLIENT_ID')
@@ -23,6 +32,7 @@ try:
         client_secret=REDDIT_CLIENT_SECRET,
         user_agent="spiritual_research_v1"
     )
+    reddit.read_only = True
     
     print("✅ Successfully connected to Reddit!")
     
@@ -62,27 +72,43 @@ def analyze_spiritual_communities():
     print("\n🔍 Scanning spiritual communities...")
     print("This may take 1-2 minutes...")
     
-    communities = ['spirituality', 'meditation', 'Mindfulness', 'awakened']
-    
     all_findings = []
     
-    for community in communities:
+    for community in COMMUNITIES:
         print(f"📖 Checking r/{community}...")
         
         try:
             subreddit = reddit.subreddit(community)
             
-            for post in subreddit.new(limit=25):
-                emotions = find_emotional_content(post.title + " " + (post.selftext or ""))
+            for post in subreddit.new(limit=POSTS_PER_COMMUNITY):
+                full_text = post.title + " " + (post.selftext or "")
+                emotions = find_emotional_content(full_text)
                 
                 if emotions:
-                    all_findings.append({
+                    post_data = {
                         'community': community,
-                        'title': post.title[:80] + "..." if len(post.title) > 80 else post.title,
+                        'title': post.title,
+                        'content': post.selftext or "",
+                        'url': f"https://reddit.com{post.permalink}",
                         'emotions': emotions,
                         'upvotes': post.score,
-                        'comments': post.num_comments
-                    })
+                        'num_comments': post.num_comments,
+                        'top_comments': []
+                    }
+                    
+                    if SHOW_COMMENTS and post.num_comments > 0:
+                        try:
+                            post.comments.replace_more(limit=0)
+                            for comment in list(post.comments)[:MAX_COMMENTS_PER_POST]:
+                                if hasattr(comment, 'body') and comment.body not in ['[removed]', '[deleted]']:
+                                    post_data['top_comments'].append({
+                                        'text': comment.body,
+                                        'upvotes': comment.score
+                                    })
+                        except Exception as e:
+                            pass
+                    
+                    all_findings.append(post_data)
             
             time.sleep(1)
             
@@ -116,13 +142,31 @@ if results:
         percentage = (count / len(results)) * 100
         print(f"• {emotion.upper()}: {count} posts ({percentage:.1f}%)")
     
-    print(f"\n📝 RECENT EXAMPLES FOUND:")
-    print("-" * 30)
+    print(f"\n📝 DETAILED POST ANALYSIS:")
+    print("=" * 70)
     for i, post in enumerate(results[:6]):
-        print(f"\n{i+1}. r/{post['community']}")
-        print(f"   '{post['title']}'")
-        print(f"   💔 Emotions: {', '.join(post['emotions'])}")
-        print(f"   📈 Engagement: {post['upvotes']} 👍, {post['comments']} 💬")
+        print(f"\n{'─' * 70}")
+        print(f"POST #{i+1} | r/{post['community']} | {post['upvotes']} ↑ | {post['num_comments']} comments")
+        print(f"{'─' * 70}")
+        print(f"\n📌 TITLE: {post['title']}")
+        
+        if post['content']:
+            content_preview = post['content'][:400]
+            if len(post['content']) > 400:
+                content_preview += "..."
+            print(f"\n📄 CONTENT:\n{content_preview}")
+        
+        print(f"\n💔 EMOTIONS DETECTED: {', '.join(post['emotions']).upper()}")
+        print(f"🔗 URL: {post['url']}")
+        
+        if post['top_comments']:
+            print(f"\n💬 TOP COMMENTS ({len(post['top_comments'])}):")
+            for j, comment in enumerate(post['top_comments'], 1):
+                comment_preview = comment['text'][:200]
+                if len(comment['text']) > 200:
+                    comment_preview += "..."
+                print(f"\n   [{j}] ({comment['upvotes']} ↑)")
+                print(f"   {comment_preview}")
     
     print(f"\n💡 INSIGHT:")
     if emotion_counts:
