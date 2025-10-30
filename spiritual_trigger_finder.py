@@ -1,7 +1,10 @@
 import praw
 import time
 import os
+import csv
+import json
 from collections import Counter
+from datetime import datetime
 
 COMMUNITIES = ['spirituality', 'meditation', 'Mindfulness', 'awakened']
 POSTS_PER_COMMUNITY = 25
@@ -68,6 +71,94 @@ def find_emotional_content(text):
     
     return found_emotions
 
+def export_to_csv(data, filename='spiritual_posts.csv'):
+    """Export post data to CSV file"""
+    if not data:
+        return
+    
+    with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+        fieldnames = ['post_id', 'community', 'title', 'content', 'url', 'flair', 
+                     'created_date', 'upvotes', 'num_comments', 'author', 
+                     'emotions', 'comment_count', 'top_comment_1', 'top_comment_2', 'top_comment_3']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        
+        writer.writeheader()
+        for post in data:
+            row = {
+                'post_id': post['post_id'],
+                'community': post['community'],
+                'title': post['title'],
+                'content': post['content'],
+                'url': post['url'],
+                'flair': post['flair'],
+                'created_date': post['created_date'],
+                'upvotes': post['upvotes'],
+                'num_comments': post['num_comments'],
+                'author': post['author'],
+                'emotions': ', '.join(post['emotions']),
+                'comment_count': len(post['top_comments'])
+            }
+            
+            for i, comment in enumerate(post['top_comments'][:3], 1):
+                row[f'top_comment_{i}'] = comment['text']
+            
+            writer.writerow(row)
+    
+    print(f"✅ CSV exported: {filename}")
+
+def export_to_json(data, filename='spiritual_posts.json'):
+    """Export full data to JSON file"""
+    if not data:
+        return
+    
+    with open(filename, 'w', encoding='utf-8') as jsonfile:
+        json.dump(data, jsonfile, indent=2, ensure_ascii=False)
+    
+    print(f"✅ JSON exported: {filename}")
+
+def export_to_text(data, filename='spiritual_posts_for_chatgpt.txt'):
+    """Export formatted text file for ChatGPT"""
+    if not data:
+        return
+    
+    with open(filename, 'w', encoding='utf-8') as textfile:
+        textfile.write("=" * 80 + "\n")
+        textfile.write("SPIRITUAL REDDIT POSTS ANALYSIS\n")
+        textfile.write(f"Extracted: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        textfile.write(f"Total Posts: {len(data)}\n")
+        textfile.write("=" * 80 + "\n\n")
+        
+        for i, post in enumerate(data, 1):
+            textfile.write(f"\n{'=' * 80}\n")
+            textfile.write(f"POST #{i}\n")
+            textfile.write(f"{'=' * 80}\n\n")
+            
+            textfile.write(f"Subreddit: r/{post['community']}\n")
+            textfile.write(f"Title: {post['title']}\n")
+            textfile.write(f"Posted: {post['created_date']}\n")
+            textfile.write(f"Author: {post['author']}\n")
+            if post['flair']:
+                textfile.write(f"Flair: {post['flair']}\n")
+            textfile.write(f"Upvotes: {post['upvotes']} | Comments: {post['num_comments']}\n")
+            textfile.write(f"URL: {post['url']}\n")
+            textfile.write(f"Emotions Detected: {', '.join(post['emotions']).upper()}\n\n")
+            
+            textfile.write(f"Content:\n{'-' * 80}\n")
+            textfile.write(post['content'] if post['content'] else "[No text content]\n")
+            textfile.write(f"\n{'-' * 80}\n")
+            
+            if post['top_comments']:
+                textfile.write(f"\nTop Comments ({len(post['top_comments'])}):\n")
+                textfile.write(f"{'-' * 80}\n")
+                for j, comment in enumerate(post['top_comments'], 1):
+                    textfile.write(f"\nComment #{j} | {comment['upvotes']} upvotes | By: {comment['author']} | {comment['created_date']}\n")
+                    textfile.write(f"{comment['text']}\n")
+                    textfile.write(f"{'-' * 40}\n")
+            
+            textfile.write("\n\n")
+    
+    print(f"✅ Text file exported: {filename}")
+
 def analyze_spiritual_communities():
     print("\n🔍 Scanning spiritual communities...")
     print("This may take 1-2 minutes...")
@@ -85,14 +176,21 @@ def analyze_spiritual_communities():
                 emotions = find_emotional_content(full_text)
                 
                 if emotions:
+                    post_created = datetime.fromtimestamp(post.created_utc)
+                    
                     post_data = {
                         'community': community,
                         'title': post.title,
                         'content': post.selftext or "",
                         'url': f"https://reddit.com{post.permalink}",
+                        'flair': post.link_flair_text or "",
+                        'created_date': post_created.strftime('%Y-%m-%d %H:%M:%S'),
+                        'created_timestamp': post.created_utc,
                         'emotions': emotions,
                         'upvotes': post.score,
                         'num_comments': post.num_comments,
+                        'post_id': post.id,
+                        'author': str(post.author) if post.author else "[deleted]",
                         'top_comments': []
                     }
                     
@@ -101,12 +199,16 @@ def analyze_spiritual_communities():
                             post.comments.replace_more(limit=0)
                             for comment in list(post.comments)[:MAX_COMMENTS_PER_POST]:
                                 if hasattr(comment, 'body') and comment.body not in ['[removed]', '[deleted]']:
+                                    comment_created = datetime.fromtimestamp(comment.created_utc)
                                     post_data['top_comments'].append({
                                         'text': comment.body,
-                                        'upvotes': comment.score
+                                        'upvotes': comment.score,
+                                        'created_date': comment_created.strftime('%Y-%m-%d %H:%M:%S'),
+                                        'created_timestamp': comment.created_utc,
+                                        'author': str(comment.author) if comment.author else "[deleted]"
                                     })
                         except Exception as e:
-                            pass
+                            print(f"      ⚠️  Error fetching comments: {str(e)[:40]}...")
                     
                     all_findings.append(post_data)
             
@@ -129,6 +231,12 @@ print("="*50)
 
 if results:
     print(f"📊 Found {len(results)} emotionally charged posts")
+    
+    print("\n💾 Exporting data to files...")
+    export_to_csv(results)
+    export_to_json(results)
+    export_to_text(results)
+    print("✅ All exports complete!")
     
     all_emotions = []
     for post in results:
@@ -175,8 +283,13 @@ if results:
     else:
         print("No strong emotional patterns detected yet.")
     
+    print("\n📂 EXPORTED FILES:")
+    print("   • spiritual_posts.csv - Spreadsheet format for Excel/Google Sheets")
+    print("   • spiritual_posts.json - JSON format for LLM/AI processing")
+    print("   • spiritual_posts_for_chatgpt.txt - Formatted text to copy to ChatGPT")
+    
 else:
     print("❌ No emotional content found.")
     print("\n🔧 Try increasing the post limit or checking different communities")
 
-print("\n✨ Done! Use these insights to better understand your clients' struggles.")
+print("\n✨ Done! Check the exported files for comprehensive data.")
