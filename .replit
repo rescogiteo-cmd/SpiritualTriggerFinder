@@ -15,15 +15,20 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Spiritual Trigger Finder"
+args = "Spiritual Trigger Web App"
 
 [[workflows.workflow]]
-name = "Spiritual Trigger Finder"
+name = "Spiritual Trigger Web App"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python spiritual_trigger_finder.py"
+args = "python app.py"
+waitForPort = 5000
 
 [workflows.workflow.metadata]
-outputType = "console"
+outputType = "webview"
+
+[[ports]]
+localPort = 5000
+externalPort = 80

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spiritual Trigger Finder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌈 Spiritual Trigger Finder</h1>
+            <p>Analyze spiritual communities on Reddit for emotional patterns</p>
+        </header>
+
+        <div class="main-content">
+            <div class="config-panel">
+                <h2>Configuration</h2>
+                
+                <div class="form-group">
+                    <label>Add Subreddit</label>
+                    <div class="input-group">
+                        <input type="text" id="subredditInput" placeholder="e.g., spirituality, meditation">
+                        <button onclick="addSubreddit()" class="btn-add">Add</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Selected Communities</label>
+                    <div id="communityList" class="community-list">
+                        <div class="community-tag">
+                            <span>spirituality</span>
+                            <button onclick="removeSubreddit('spirituality')">×</button>
+                        </div>
+                        <div class="community-tag">
+                            <span>meditation</span>
+                            <button onclick="removeSubreddit('meditation')">×</button>
+                        </div>
+                        <div class="community-tag">
+                            <span>Mindfulness</span>
+                            <button onclick="removeSubreddit('Mindfulness')">×</button>
+                        </div>
+                        <div class="community-tag">
+                            <span>awakened</span>
+                            <button onclick="removeSubreddit('awakened')">×</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="postsPerCommunity">Posts per Community: <span id="postsValue">25</span></label>
+                    <input type="range" id="postsPerCommunity" min="5" max="100" value="25" oninput="updateValue('postsValue', this.value)">
+                </div>
+
+                <div class="form-group">
+                    <label for="sleepTime">Sleep Between Communities (seconds): <span id="sleepValue">2</span></label>
+                    <input type="range" id="sleepTime" min="1" max="10" value="2" oninput="updateValue('sleepValue', this.value)">
+                    <small>Prevents rate limiting and API bans</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="showComments" checked>
+                        Fetch Comments
+                    </label>
+                </div>
+
+                <div class="form-group" id="maxCommentsGroup">
+                    <label for="maxComments">Max Comments per Post: <span id="commentsValue">3</span></label>
+                    <input type="range" id="maxComments" min="1" max="10" value="3" oninput="updateValue('commentsValue', this.value)">
+                </div>
+
+                <button onclick="startAnalysis()" id="analyzeBtn" class="btn-primary">
+                    🚀 Start Analysis
+                </button>
+            </div>
+
+            <div class="results-panel">
+                <h2>Analysis Status</h2>
+                
+                <div id="statusBox" class="status-box">
+                    <p id="statusMessage">Ready to analyze</p>
+                    <div id="progressBar" class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                    <p id="progressText"></p>
+                </div>
+
+                <div id="resultsSection" class="results-section" style="display: none;">
+                    <h3>Results Summary</h3>
+                    <div id="resultsSummary"></div>
+                    
+                    <div class="download-section">
+                        <h3>Download Data</h3>
+                        <div class="download-buttons">
+                            <a href="/download/csv" class="btn-download" download>
+                                📊 CSV File
+                                <small>For Excel/Sheets</small>
+                            </a>
+                            <a href="/download/json" class="btn-download" download>
+                                📦 JSON File
+                                <small>For LLM/AI</small>
+                            </a>
+                            <a href="/download/txt" class="btn-download" download>
+                                📝 Text File
+                                <small>For ChatGPT</small>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div id="postsPreview" class="posts-preview"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
