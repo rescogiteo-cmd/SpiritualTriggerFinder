@@ -24,10 +24,17 @@ EMOTIONAL_PATTERNS = {
 
 analysis_status = {
     'running': False,
-    'progress': 0,
-    'total': 0,
+    'posts_scanned': 0,
+    'total_posts': 0,
+    'communities_done': 0,
+    'total_communities': 0,
     'current_community': '',
-    'message': ''
+    'posts_found': 0,
+    'message': '',
+    'phase': 'idle',
+    'start_time': None,
+    'elapsed': 0,
+    'eta': None
 }
 
 latest_results = []
@@ -128,11 +135,37 @@ def export_to_text(data, filename='exports/spiritual_posts_for_chatgpt.txt'):
 
 def analyze_communities(communities, posts_per_community, show_comments, max_comments, sleep_time):
     global analysis_status, latest_results
-    
-    analysis_status['running'] = True
-    analysis_status['progress'] = 0
-    analysis_status['total'] = len(communities)
-    
+
+    total_posts = len(communities) * posts_per_community
+    start_time = time.time()
+
+    analysis_status.update({
+        'running': True,
+        'posts_scanned': 0,
+        'total_posts': total_posts,
+        'communities_done': 0,
+        'total_communities': len(communities),
+        'current_community': '',
+        'posts_found': 0,
+        'message': 'Connecting to Reddit...',
+        'phase': 'connecting',
+        'start_time': start_time,
+        'elapsed': 0,
+        'eta': None
+    })
+
+    def update_timing():
+        elapsed = time.time() - start_time
+        scanned = analysis_status['posts_scanned']
+        analysis_status['elapsed'] = round(elapsed, 1)
+        if scanned > 0 and elapsed > 0:
+            rate = scanned / elapsed
+            remaining = total_posts - scanned
+            sleep_remaining = (analysis_status['total_communities'] - analysis_status['communities_done'] - 1) * sleep_time
+            analysis_status['eta'] = round(remaining / rate + sleep_remaining, 0)
+        else:
+            analysis_status['eta'] = None
+
     try:
         reddit = praw.Reddit(
             client_id=REDDIT_CLIENT_ID,
@@ -140,23 +173,27 @@ def analyze_communities(communities, posts_per_community, show_comments, max_com
             user_agent="spiritual_research_v1"
         )
         reddit.read_only = True
-        
+
         all_findings = []
-        
+
         for idx, community in enumerate(communities):
             analysis_status['current_community'] = community
+            analysis_status['phase'] = 'scanning'
             analysis_status['message'] = f'Scanning r/{community}...'
-            
+
             try:
                 subreddit = reddit.subreddit(community)
-                
+
                 for post in subreddit.new(limit=posts_per_community):
+                    analysis_status['posts_scanned'] += 1
+                    update_timing()
+
                     full_text = post.title + " " + (post.selftext or "")
                     emotions = find_emotional_content(full_text)
-                    
+
                     if emotions:
                         post_created = datetime.fromtimestamp(post.created_utc)
-                        
+
                         post_data = {
                             'community': community,
                             'title': post.title,
@@ -172,7 +209,7 @@ def analyze_communities(communities, posts_per_community, show_comments, max_com
                             'author': str(post.author) if post.author else "[deleted]",
                             'top_comments': []
                         }
-                        
+
                         if show_comments and post.num_comments > 0:
                             try:
                                 post.comments.replace_more(limit=0)
@@ -186,32 +223,43 @@ def analyze_communities(communities, posts_per_community, show_comments, max_com
                                             'created_timestamp': comment.created_utc,
                                             'author': str(comment.author) if comment.author else "[deleted]"
                                         })
-                            except Exception as e:
+                            except Exception:
                                 pass
-                        
+
                         all_findings.append(post_data)
-                
-                analysis_status['progress'] = idx + 1
-                
+                        analysis_status['posts_found'] = len(all_findings)
+
+                analysis_status['communities_done'] = idx + 1
+
                 if idx < len(communities) - 1:
-                    analysis_status['message'] = f'Waiting {sleep_time}s before next community...'
-                    time.sleep(sleep_time)
-                
+                    analysis_status['phase'] = 'sleeping'
+                    for remaining_sleep in range(sleep_time, 0, -1):
+                        analysis_status['message'] = f'Sleeping {remaining_sleep}s before r/{communities[idx + 1]}...'
+                        update_timing()
+                        time.sleep(1)
+
             except Exception as e:
-                analysis_status['message'] = f'Error accessing r/{community}: {str(e)[:50]}'
+                analysis_status['message'] = f'Error accessing r/{community}: {str(e)[:60]}'
+                analysis_status['communities_done'] = idx + 1
                 time.sleep(2)
-        
+
         latest_results = all_findings
-        
+
+        analysis_status['phase'] = 'exporting'
+        analysis_status['message'] = 'Saving export files...'
         export_to_csv(all_findings)
         export_to_json(all_findings)
         export_to_text(all_findings)
-        
-        analysis_status['message'] = f'Complete! Found {len(all_findings)} posts'
+
+        update_timing()
+        analysis_status['message'] = f'Complete! Found {len(all_findings)} emotionally charged posts'
+        analysis_status['phase'] = 'done'
         analysis_status['running'] = False
-        
+        analysis_status['eta'] = 0
+
     except Exception as e:
         analysis_status['message'] = f'Error: {str(e)}'
+        analysis_status['phase'] = 'error'
         analysis_status['running'] = False
 
 @app.route('/')
@@ -241,7 +289,8 @@ def analyze():
 
 @app.route('/status')
 def status():
-    return jsonify(analysis_status)
+    safe = {k: v for k, v in analysis_status.items() if k != 'start_time'}
+    return jsonify(safe)
 
 @app.route('/results')
 def results():

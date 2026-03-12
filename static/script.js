@@ -101,35 +101,80 @@ function startStatusPolling() {
     if (statusInterval) {
         clearInterval(statusInterval);
     }
-    
+
     statusInterval = setInterval(async () => {
         try {
             const response = await fetch('/status');
             const status = await response.json();
-            
+
             updateStatus(status);
-            
-            if (!status.running && status.progress > 0) {
+
+            if (!status.running && status.phase === 'done') {
                 clearInterval(statusInterval);
                 await loadResults();
+            } else if (!status.running && status.phase === 'error') {
+                clearInterval(statusInterval);
+                const analyzeBtn = document.getElementById('analyzeBtn');
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = '🚀 Start Analysis';
             }
         } catch (error) {
             console.error('Error polling status:', error);
         }
-    }, 1000);
+    }, 500);
+}
+
+function formatTime(seconds) {
+    if (seconds === null || seconds === undefined) return '—';
+    const s = Math.round(seconds);
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    const rem = s % 60;
+    return `${m}m ${rem}s`;
 }
 
 function updateStatus(status) {
     const messageEl = document.getElementById('statusMessage');
     const progressFill = document.getElementById('progressFill');
-    const progressText = document.getElementById('progressText');
-    
+    const postProgressText = document.getElementById('postProgressText');
+    const communityProgressText = document.getElementById('communityProgressText');
+    const elapsedText = document.getElementById('elapsedText');
+    const etaText = document.getElementById('etaText');
+    const postsFoundText = document.getElementById('postsFoundText');
+    const phaseIndicator = document.getElementById('phaseIndicator');
+
     messageEl.textContent = status.message || 'Processing...';
-    
-    if (status.total > 0) {
-        const percentage = (status.progress / status.total) * 100;
-        progressFill.style.width = percentage + '%';
-        progressText.textContent = `${status.progress} / ${status.total} communities processed`;
+
+    if (status.total_posts > 0) {
+        const percentage = Math.min((status.posts_scanned / status.total_posts) * 100, 100);
+        progressFill.style.width = percentage.toFixed(1) + '%';
+        postProgressText.textContent = `${status.posts_scanned} / ${status.total_posts} posts scanned`;
+    }
+
+    communityProgressText.textContent = `${status.communities_done} / ${status.total_communities} communities done`;
+    postsFoundText.textContent = status.posts_found || 0;
+    elapsedText.textContent = formatTime(status.elapsed);
+    etaText.textContent = status.phase === 'done' ? 'Done!' : formatTime(status.eta);
+
+    const phaseLabels = {
+        'idle': '',
+        'connecting': '🔌 Connecting',
+        'scanning': '🔍 Scanning',
+        'sleeping': '😴 Rate limiting',
+        'exporting': '💾 Saving files',
+        'done': '✅ Complete',
+        'error': '❌ Error'
+    };
+    const phaseColors = {
+        'scanning': '#667eea',
+        'sleeping': '#f6ad55',
+        'exporting': '#48bb78',
+        'done': '#48bb78',
+        'error': '#e53e3e'
+    };
+    if (phaseIndicator) {
+        phaseIndicator.textContent = phaseLabels[status.phase] || '';
+        phaseIndicator.style.background = phaseColors[status.phase] || '#667eea';
     }
 }
 

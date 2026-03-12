@@ -79,11 +79,36 @@
                 <h2>Analysis Status</h2>
                 
                 <div id="statusBox" class="status-box">
-                    <p id="statusMessage">Ready to analyze</p>
-                    <div id="progressBar" class="progress-bar">
-                        <div id="progressFill" class="progress-fill"></div>
+                    <div class="status-header">
+                        <p id="statusMessage">Ready to analyze</p>
+                        <span id="phaseIndicator" class="phase-indicator"></span>
                     </div>
-                    <p id="progressText"></p>
+
+                    <div class="progress-bar-wrap">
+                        <div id="progressBar" class="progress-bar">
+                            <div id="progressFill" class="progress-fill"></div>
+                        </div>
+                        <span id="postProgressText" class="progress-label">—</span>
+                    </div>
+
+                    <div class="stats-row">
+                        <div class="stat-box">
+                            <div class="stat-label">Communities</div>
+                            <div class="stat-value" id="communityProgressText">0 / 0</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Posts Found</div>
+                            <div class="stat-value" id="postsFoundText">0</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Elapsed</div>
+                            <div class="stat-value" id="elapsedText">—</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Est. Remaining</div>
+                            <div class="stat-value" id="etaText">—</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="resultsSection" class="results-section" style="display: none;">
