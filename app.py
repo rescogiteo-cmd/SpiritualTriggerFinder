@@ -22,6 +22,15 @@ EMOTIONAL_PATTERNS = {
     'disappointment': ['disappointed', 'let down', 'failed', 'not working', 'waste', 'regret']
 }
 
+EMOTION_COLORS = {
+    'frustration': '#e53e3e',
+    'confusion': '#d69e2e',
+    'fear': '#805ad5',
+    'loneliness': '#2b6cb0',
+    'insecurity': '#c05621',
+    'disappointment': '#2f855a'
+}
+
 analysis_status = {
     'running': False,
     'posts_scanned': 0,
@@ -295,6 +304,33 @@ def status():
 @app.route('/results')
 def results():
     return jsonify(latest_results)
+
+@app.route('/keywords', methods=['GET'])
+def get_keywords():
+    return jsonify({'patterns': EMOTIONAL_PATTERNS, 'colors': EMOTION_COLORS})
+
+@app.route('/keywords', methods=['POST'])
+def update_keywords():
+    global EMOTIONAL_PATTERNS, EMOTION_COLORS
+    data = request.json
+    patterns = data.get('patterns', {})
+    colors = data.get('colors', {})
+
+    if not isinstance(patterns, dict):
+        return jsonify({'error': 'Invalid format'}), 400
+
+    cleaned = {}
+    for emotion, words in patterns.items():
+        emotion = emotion.strip().lower()
+        if not emotion:
+            continue
+        cleaned[emotion] = [w.strip() for w in words if w.strip()]
+
+    EMOTIONAL_PATTERNS = cleaned
+    for emotion, color in colors.items():
+        EMOTION_COLORS[emotion] = color
+
+    return jsonify({'status': 'saved', 'patterns': EMOTIONAL_PATTERNS})
 
 @app.route('/download/<file_type>')
 def download(file_type):

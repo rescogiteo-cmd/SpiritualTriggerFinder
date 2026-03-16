@@ -10,12 +10,15 @@ A Python tool that analyzes spiritual communities on Reddit to identify emotiona
 - Provides insights into the most common emotional triggers
 
 ## Features
-- **Customizable Communities**: Edit the `COMMUNITIES` list at the top of the script to choose which subreddits to analyze
+- **Customizable Communities**: Add/remove subreddits directly in the UI
+- **Keyword Editor**: Edit emotion categories and their keywords live in the UI — no code changes needed
 - **Comprehensive Data Extraction**: Captures full post content, metadata, and comments
 - **Multiple Export Formats**: Saves data in CSV, JSON, and text formats
 - **Post Details**: Extracts title, content, URL, flair, creation date, upvotes, author, and more
 - **Comment Analysis**: Collects top comments with text, upvotes, dates, and authors
-- **Emotional Patterns**: Automatically detects 6 emotional patterns in posts and comments
+- **Emotional Patterns**: Detects emotion patterns based on fully editable keyword lists
+- **Real-Time Progress**: Post-level progress bar with elapsed time and estimated time remaining
+- **Rate Limit Protection**: Configurable sleep between communities to avoid Reddit API bans
 
 ## Project Structure
 - `spiritual_trigger_finder.py` - Main analysis script

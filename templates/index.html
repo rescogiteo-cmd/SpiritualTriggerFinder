@@ -137,6 +137,21 @@
                 </div>
             </div>
         </div>
+
+        <div class="keywords-panel">
+            <div class="keywords-header">
+                <div>
+                    <h2>🔑 Emotion Keywords</h2>
+                    <p class="keywords-subtitle">These are the words the script scans for in posts and comments. Edit them to match your research needs.</p>
+                </div>
+                <div class="keywords-actions">
+                    <button onclick="addEmotion()" class="btn-add-emotion">+ Add Emotion</button>
+                    <button onclick="saveKeywords()" id="saveKeywordsBtn" class="btn-save-keywords">Save Changes</button>
+                </div>
+            </div>
+            <div id="keywordsEditor" class="keywords-grid"></div>
+            <div id="saveStatus" class="save-status"></div>
+        </div>
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>

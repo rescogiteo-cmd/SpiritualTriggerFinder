@@ -415,3 +415,232 @@ input[type="range"]::-moz-range-thumb {
         grid-template-columns: 1fr;
     }
 }
+
+/* ── Keywords Editor ── */
+.keywords-panel {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    margin-top: 20px;
+}
+
+.keywords-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 25px;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.keywords-header h2 {
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.keywords-subtitle {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.keywords-actions {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.btn-add-emotion {
+    padding: 10px 18px;
+    background: #f0f0f0;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-add-emotion:hover {
+    background: #e8e8e8;
+    border-color: #ccc;
+}
+
+.btn-save-keywords {
+    padding: 10px 22px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-save-keywords:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+}
+
+.keywords-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+}
+
+.emotion-card {
+    border: 2px solid #e8e8e8;
+    border-radius: 12px;
+    padding: 18px;
+    transition: border-color 0.2s;
+}
+
+.emotion-card:hover {
+    border-color: #ccc;
+}
+
+.emotion-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    gap: 8px;
+}
+
+.emotion-name-input {
+    font-size: 1rem;
+    font-weight: 700;
+    color: white;
+    background: #667eea;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex: 1;
+    min-width: 0;
+}
+
+.emotion-name-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(102,126,234,0.4);
+}
+
+.emotion-color-picker {
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 2px;
+    background: none;
+}
+
+.btn-remove-emotion {
+    background: none;
+    border: none;
+    color: #ccc;
+    font-size: 1.3rem;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: color 0.2s, background 0.2s;
+    line-height: 1;
+}
+
+.btn-remove-emotion:hover {
+    color: #e53e3e;
+    background: #fff5f5;
+}
+
+.keyword-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+    min-height: 36px;
+}
+
+.keyword-tag {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: #f0f4ff;
+    border: 1px solid #d0d9ff;
+    color: #3a52a3;
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 0.85rem;
+    transition: background 0.2s;
+}
+
+.keyword-tag:hover {
+    background: #e4ecff;
+}
+
+.keyword-tag button {
+    background: none;
+    border: none;
+    color: #8fa3d8;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.keyword-tag button:hover {
+    color: #e53e3e;
+}
+
+.keyword-add-row {
+    display: flex;
+    gap: 8px;
+}
+
+.keyword-add-row input {
+    flex: 1;
+    padding: 7px 12px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 7px;
+    font-size: 0.9rem;
+}
+
+.keyword-add-row input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.btn-add-keyword {
+    padding: 7px 14px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 7px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-add-keyword:hover {
+    background: #5568d3;
+}
+
+.save-status {
+    margin-top: 16px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    min-height: 24px;
+}
+
+.save-status.success { color: #38a169; }
+.save-status.error   { color: #e53e3e; }
+
+@media (max-width: 600px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .keywords-header { flex-direction: column; }
+    .keywords-actions { width: 100%; }
+}

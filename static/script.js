@@ -242,3 +242,182 @@ function displayResults(results) {
         `).join('')}
     `;
 }
+
+// ── Keywords Editor ──────────────────────────────────────────────
+
+let keywordsData = {};  // { emotion: [words] }
+let keywordColors = {}; // { emotion: color }
+
+const DEFAULT_COLORS = [
+    '#e53e3e','#d69e2e','#805ad5','#2b6cb0','#c05621',
+    '#2f855a','#b83280','#2c7a7b','#744210','#1a365d'
+];
+
+async function loadKeywords() {
+    try {
+        const res = await fetch('/keywords');
+        const data = await res.json();
+        keywordsData = data.patterns || {};
+        keywordColors = data.colors || {};
+        renderKeywordsEditor();
+    } catch (e) {
+        console.error('Failed to load keywords', e);
+    }
+}
+
+function renderKeywordsEditor() {
+    const grid = document.getElementById('keywordsEditor');
+    grid.innerHTML = Object.entries(keywordsData).map(([emotion, words]) => {
+        const color = keywordColors[emotion] || '#667eea';
+        return `
+        <div class="emotion-card" id="card-${emotion}">
+            <div class="emotion-card-header">
+                <input class="emotion-name-input"
+                       id="name-${emotion}"
+                       value="${emotion}"
+                       style="background:${color}"
+                       oninput="renameEmotion('${emotion}', this)"
+                       onblur="commitRename('${emotion}', this)">
+                <input type="color"
+                       class="emotion-color-picker"
+                       value="${color}"
+                       title="Change color"
+                       oninput="changeColor('${emotion}', this.value)">
+                <button class="btn-remove-emotion"
+                        onclick="removeEmotion('${emotion}')"
+                        title="Remove this emotion">×</button>
+            </div>
+            <div class="keyword-tags" id="tags-${emotion}">
+                ${words.map(w => keywordTagHTML(emotion, w)).join('')}
+            </div>
+            <div class="keyword-add-row">
+                <input type="text"
+                       id="new-kw-${emotion}"
+                       placeholder="Add keyword…"
+                       onkeypress="if(event.key==='Enter') addKeyword('${emotion}')">
+                <button class="btn-add-keyword" onclick="addKeyword('${emotion}')">Add</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function keywordTagHTML(emotion, word) {
+    const safe = word.replace(/"/g, '&quot;');
+    return `<span class="keyword-tag">
+        ${word}
+        <button onclick="removeKeyword('${emotion}', '${safe}')" title="Remove">×</button>
+    </span>`;
+}
+
+function addKeyword(emotion) {
+    const input = document.getElementById(`new-kw-${emotion}`);
+    const word = input.value.trim();
+    if (!word) return;
+    if (!keywordsData[emotion].includes(word)) {
+        keywordsData[emotion].push(word);
+        const tagsEl = document.getElementById(`tags-${emotion}`);
+        tagsEl.insertAdjacentHTML('beforeend', keywordTagHTML(emotion, word));
+    }
+    input.value = '';
+    input.focus();
+    markUnsaved();
+}
+
+function removeKeyword(emotion, word) {
+    keywordsData[emotion] = keywordsData[emotion].filter(w => w !== word);
+    renderKeywordsEditor();
+    markUnsaved();
+}
+
+function removeEmotion(emotion) {
+    if (!confirm(`Remove the "${emotion}" emotion category and all its keywords?`)) return;
+    delete keywordsData[emotion];
+    delete keywordColors[emotion];
+    renderKeywordsEditor();
+    markUnsaved();
+}
+
+function addEmotion() {
+    const name = prompt('Name for the new emotion category (e.g. grief):');
+    if (!name || !name.trim()) return;
+    const key = name.trim().toLowerCase();
+    if (keywordsData[key]) {
+        alert(`"${key}" already exists.`);
+        return;
+    }
+    keywordsData[key] = [];
+    const usedColors = Object.values(keywordColors);
+    keywordColors[key] = DEFAULT_COLORS.find(c => !usedColors.includes(c)) || '#667eea';
+    renderKeywordsEditor();
+    markUnsaved();
+    document.getElementById(`new-kw-${key}`).focus();
+}
+
+function renameEmotion(oldName, inputEl) {
+    const color = keywordColors[oldName] || '#667eea';
+    inputEl.style.background = color;
+}
+
+function commitRename(oldName, inputEl) {
+    const newName = inputEl.value.trim().toLowerCase();
+    if (!newName || newName === oldName) { inputEl.value = oldName; return; }
+    if (keywordsData[newName]) {
+        alert(`"${newName}" already exists.`);
+        inputEl.value = oldName;
+        return;
+    }
+    keywordsData[newName] = keywordsData[oldName];
+    keywordColors[newName] = keywordColors[oldName];
+    delete keywordsData[oldName];
+    delete keywordColors[oldName];
+    renderKeywordsEditor();
+    markUnsaved();
+}
+
+function changeColor(emotion, color) {
+    keywordColors[emotion] = color;
+    const nameInput = document.getElementById(`name-${emotion}`);
+    if (nameInput) nameInput.style.background = color;
+    markUnsaved();
+}
+
+function markUnsaved() {
+    const btn = document.getElementById('saveKeywordsBtn');
+    btn.textContent = 'Save Changes ●';
+    btn.style.boxShadow = '0 0 0 3px rgba(102,126,234,0.4)';
+    document.getElementById('saveStatus').textContent = '';
+}
+
+async function saveKeywords() {
+    const btn = document.getElementById('saveKeywordsBtn');
+    const statusEl = document.getElementById('saveStatus');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+        const res = await fetch('/keywords', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ patterns: keywordsData, colors: keywordColors })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            keywordsData = data.patterns;
+            renderKeywordsEditor();
+            statusEl.className = 'save-status success';
+            statusEl.textContent = '✅ Keywords saved successfully!';
+        } else {
+            statusEl.className = 'save-status error';
+            statusEl.textContent = '❌ ' + (data.error || 'Save failed');
+        }
+    } catch (e) {
+        statusEl.className = 'save-status error';
+        statusEl.textContent = '❌ Network error';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Save Changes';
+    btn.style.boxShadow = '';
+}
+
+loadKeywords();
