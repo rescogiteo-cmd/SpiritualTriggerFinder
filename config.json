@@ -1,0 +1,22 @@
+{
+  "trigger_keywords": {
+    "feeling_stuck": ["feeling stuck", "nothing moves", "pushing against a wall", "going in circles", "no progress", "standstill"],
+    "self_sabotage": ["self-sabotage", "can't break patterns", "know what to do but", "why do I keep", "keep repeating", "sabotaging myself"],
+    "spiritual_crisis": ["spiritual awakening overwhelming", "dark night", "losing my mind", "going crazy", "too much to handle", "breaking down", "falling apart"],
+    "impostor_syndrome": ["impostor syndrome", "not good enough", "fake", "don't belong", "fraud", "don't deserve", "pretending"],
+    "anxiety_night": ["anxiety at night", "can't sleep", "3am", "lying awake", "racing thoughts", "mind won't stop", "insomnia"],
+    "past_life": ["past life memories", "past life regression", "remember past life", "past lives", "karmic", "soul contract"],
+    "identity_confusion": ["don't know what's wrong with me", "who am i", "lost myself", "no purpose", "no direction", "don't recognize myself", "who am I anymore"],
+    "emotional_weight": ["whole world fell apart", "put myself back together", "years of", "carrying", "heavy burden", "exhausted from", "weight of"]
+  },
+  "trigger_colors": {
+    "feeling_stuck": "#c05621",
+    "self_sabotage": "#e53e3e",
+    "spiritual_crisis": "#805ad5",
+    "impostor_syndrome": "#2b6cb0",
+    "anxiety_night": "#2c7a7b",
+    "past_life": "#b83280",
+    "identity_confusion": "#d69e2e",
+    "emotional_weight": "#2f855a"
+  }
+}

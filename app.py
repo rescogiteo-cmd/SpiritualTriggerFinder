@@ -13,23 +13,15 @@ app = Flask(__name__)
 REDDIT_CLIENT_ID = os.environ.get('REDDIT_CLIENT_ID')
 REDDIT_CLIENT_SECRET = os.environ.get('REDDIT_CLIENT_SECRET')
 
-EMOTIONAL_PATTERNS = {
-    'frustration': ['frustrated', 'stuck', 'cannot', 'struggling', 'difficult', 'hard', 'trying', 'failed', 'cant', "can't"],
-    'confusion': ['confused', "don't understand", 'lost', 'uncertain', 'question', 'what does', 'how to', 'not sure'],
-    'fear': ['afraid', 'scared', 'worried', 'anxious', 'fear', 'nervous', 'panic'],
-    'loneliness': ['alone', 'lonely', 'isolated', 'no one understands', 'by myself', 'no friends'],
-    'insecurity': ['not good enough', 'inadequate', 'imposter', 'doubt', 'not sure if', 'worthless'],
-    'disappointment': ['disappointed', 'let down', 'failed', 'not working', 'waste', 'regret']
-}
+_CONFIG_PATH = 'config.json'
 
-EMOTION_COLORS = {
-    'frustration': '#e53e3e',
-    'confusion': '#d69e2e',
-    'fear': '#805ad5',
-    'loneliness': '#2b6cb0',
-    'insecurity': '#c05621',
-    'disappointment': '#2f855a'
-}
+def _load_config():
+    with open(_CONFIG_PATH, encoding='utf-8') as f:
+        return json.load(f)
+
+_cfg = _load_config()
+TRIGGER_KEYWORDS = _cfg.get('trigger_keywords', {})
+TRIGGER_COLORS   = _cfg.get('trigger_colors', {})
 
 analysis_status = {
     'running': False,
@@ -48,31 +40,32 @@ analysis_status = {
 
 latest_results = []
 
-def find_emotional_content(text):
-    if not text or text == '[removed]' or text == '[deleted]':
+def find_trigger_matches(text):
+    """Match trigger keyword phrases against post/comment text."""
+    if not text or text in ['[removed]', '[deleted]']:
         return []
-    
+
     text_lower = text.lower()
-    found_emotions = []
-    
-    for emotion, words in EMOTIONAL_PATTERNS.items():
-        for word in words:
-            if word in text_lower:
-                found_emotions.append(emotion)
+    found_triggers = []
+
+    for trigger_category, phrases in TRIGGER_KEYWORDS.items():
+        for phrase in phrases:
+            if phrase in text_lower:
+                found_triggers.append(trigger_category)
                 break
-    
-    return found_emotions
+
+    return found_triggers
 
 def export_to_csv(data, filename='exports/spiritual_posts.csv'):
     if not data:
         return
     
     with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
-        fieldnames = ['post_id', 'community', 'title', 'content', 'url', 'flair', 
-                     'created_date', 'upvotes', 'num_comments', 'author', 
-                     'emotions', 'comment_count', 'top_comment_1', 'top_comment_2', 'top_comment_3']
+        fieldnames = ['post_id', 'community', 'title', 'content', 'url', 'flair',
+                     'created_date', 'upvotes', 'num_comments', 'author',
+                     'triggers_matched', 'comment_count', 'top_comment_1', 'top_comment_2', 'top_comment_3']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        
+
         writer.writeheader()
         for post in data:
             row = {
@@ -86,7 +79,7 @@ def export_to_csv(data, filename='exports/spiritual_posts.csv'):
                 'upvotes': post['upvotes'],
                 'num_comments': post['num_comments'],
                 'author': post['author'],
-                'emotions': ', '.join(post['emotions']),
+                'triggers_matched': ', '.join(post['triggers_matched']),
                 'comment_count': len(post['top_comments'])
             }
             
@@ -126,7 +119,7 @@ def export_to_text(data, filename='exports/spiritual_posts_for_chatgpt.txt'):
                 textfile.write(f"Flair: {post['flair']}\n")
             textfile.write(f"Upvotes: {post['upvotes']} | Comments: {post['num_comments']}\n")
             textfile.write(f"URL: {post['url']}\n")
-            textfile.write(f"Emotions Detected: {', '.join(post['emotions']).upper()}\n\n")
+            textfile.write(f"Triggers Matched: {', '.join(post['triggers_matched']).upper()}\n\n")
             
             textfile.write(f"Content:\n{'-' * 80}\n")
             textfile.write(post['content'] if post['content'] else "[No text content]\n")
@@ -198,9 +191,9 @@ def analyze_communities(communities, posts_per_community, show_comments, max_com
                     update_timing()
 
                     full_text = post.title + " " + (post.selftext or "")
-                    emotions = find_emotional_content(full_text)
+                    triggers = find_trigger_matches(full_text)
 
-                    if emotions:
+                    if triggers:
                         post_created = datetime.fromtimestamp(post.created_utc)
 
                         post_data = {
@@ -211,7 +204,7 @@ def analyze_communities(communities, posts_per_community, show_comments, max_com
                             'flair': post.link_flair_text or "",
                             'created_date': post_created.strftime('%Y-%m-%d %H:%M:%S'),
                             'created_timestamp': post.created_utc,
-                            'emotions': emotions,
+                            'triggers_matched': triggers,
                             'upvotes': post.score,
                             'num_comments': post.num_comments,
                             'post_id': post.id,
@@ -261,7 +254,7 @@ def analyze_communities(communities, posts_per_community, show_comments, max_com
         export_to_text(all_findings)
 
         update_timing()
-        analysis_status['message'] = f'Complete! Found {len(all_findings)} emotionally charged posts'
+        analysis_status['message'] = f'Complete! Found {len(all_findings)} posts with trigger matches'
         analysis_status['phase'] = 'done'
         analysis_status['running'] = False
         analysis_status['eta'] = 0
@@ -307,30 +300,33 @@ def results():
 
 @app.route('/keywords', methods=['GET'])
 def get_keywords():
-    return jsonify({'patterns': EMOTIONAL_PATTERNS, 'colors': EMOTION_COLORS})
+    return jsonify({'patterns': TRIGGER_KEYWORDS, 'colors': TRIGGER_COLORS})
 
 @app.route('/keywords', methods=['POST'])
 def update_keywords():
-    global EMOTIONAL_PATTERNS, EMOTION_COLORS
+    global TRIGGER_KEYWORDS, TRIGGER_COLORS
     data = request.json
     patterns = data.get('patterns', {})
-    colors = data.get('colors', {})
+    colors   = data.get('colors', {})
 
     if not isinstance(patterns, dict):
         return jsonify({'error': 'Invalid format'}), 400
 
     cleaned = {}
-    for emotion, words in patterns.items():
-        emotion = emotion.strip().lower()
-        if not emotion:
+    for category, phrases in patterns.items():
+        category = category.strip().lower()
+        if not category:
             continue
-        cleaned[emotion] = [w.strip() for w in words if w.strip()]
+        cleaned[category] = [p.strip() for p in phrases if p.strip()]
 
-    EMOTIONAL_PATTERNS = cleaned
-    for emotion, color in colors.items():
-        EMOTION_COLORS[emotion] = color
+    TRIGGER_KEYWORDS = cleaned
+    for category, color in colors.items():
+        TRIGGER_COLORS[category] = color
 
-    return jsonify({'status': 'saved', 'patterns': EMOTIONAL_PATTERNS})
+    with open(_CONFIG_PATH, 'w', encoding='utf-8') as f:
+        json.dump({'trigger_keywords': TRIGGER_KEYWORDS, 'trigger_colors': TRIGGER_COLORS}, f, indent=2, ensure_ascii=False)
+
+    return jsonify({'status': 'saved', 'patterns': TRIGGER_KEYWORDS})
 
 @app.route('/download/<file_type>')
 def download(file_type):

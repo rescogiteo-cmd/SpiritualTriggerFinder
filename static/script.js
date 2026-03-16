@@ -203,8 +203,8 @@ function displayResults(results) {
     
     const emotionCounts = {};
     results.forEach(post => {
-        post.emotions.forEach(emotion => {
-            emotionCounts[emotion] = (emotionCounts[emotion] || 0) + 1;
+        (post.triggers_matched || []).forEach(trigger => {
+            emotionCounts[trigger] = (emotionCounts[trigger] || 0) + 1;
         });
     });
     
@@ -236,7 +236,7 @@ function displayResults(results) {
                     r/${post.community} • ${post.upvotes} ↑ • ${post.num_comments} comments • ${post.created_date}
                 </div>
                 <div class="post-emotions">
-                    ${post.emotions.map(e => `<span class="emotion-badge">${e.toUpperCase()}</span>`).join('')}
+                    ${(post.triggers_matched || []).map(t => `<span class="emotion-badge">${t.replace(/_/g,' ').toUpperCase()}</span>`).join('')}
                 </div>
             </div>
         `).join('')}
